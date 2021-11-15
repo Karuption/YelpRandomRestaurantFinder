@@ -11,7 +11,7 @@
 @inject IGraphQLClient gclient
 
 @*//TODO: Get Location from Requester IP, if gps location is not available*@
-@*//TODO: Add caching to the next half hour client side using the local storage. Think about server side caching *@
+@*//TODO: Think about server side caching *@
 
 <h3>Find</h3>
 
@@ -42,13 +42,16 @@
 }
 
 @code{
-    List<Business> shops = new ();
+    List<Business> shops = new();
+    private WindowInterop window;
     private GeolocationResult? currentPosition;
 
     protected override async Task OnInitializedAsync() {
-        var window = await jsRuntime.Window();
+        window = await jsRuntime.Window();
         var navigator = await window.Navigator();
         var newPos = await navigator.Geolocation.GetCurrentPosition();
+
+        DateTime? cacheDate = null;
 
         if (newPos.hasChanged(currentPosition))
             currentPosition = newPos;
@@ -57,11 +60,28 @@
         if (currentPosition.Error is not null) 
             return;
 
-        var request = Query.GetAllCategory(currentPosition?.getLocation() ?? "get location from IP, I guess");
+        try {
+            cacheDate = await window.LocalStorage.GetItem<DateTime?>("BusinessCacheDateTime");
+            var shopCache = await window.LocalStorage.GetItem<List<Business>?>("Business");
+            shops = shopCache ?? shops;
+        } catch (Exception ex) {}
 
-        var response = await gclient.SendQueryAsync<YelpResponse>(request);
-        shops = response?.Data?.Search?.Business?.ToList() ?? shops;
+        if (cacheDate is null || DateTime.UtcNow >= cacheDate) {
+
+            var request = Query.GetAllCategory(currentPosition?.getLocation() ?? "get location from IP, I guess");
+            var response = await gclient.SendQueryAsync<YelpResponse>(request);
+
+            shops = response?.Data?.Search?.Business?.ToList() ?? shops;
+            await window.LocalStorage.SetItem("Business", shops);
+            await window.LocalStorage.SetItem("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
+        }
     }
+
     public static double toMiles(double meters) =>
         meters * 0.000621371192;
+
+    public static DateTime roundUp30(DateTime current) =>
+        (current.Hour < 30)
+            ?current.AddMinutes(30 - current.Minute)
+            :current.AddMinutes(59 - current.Minute + 1);
 }
