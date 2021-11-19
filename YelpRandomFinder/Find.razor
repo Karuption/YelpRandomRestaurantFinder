@@ -4,36 +4,45 @@
 @using GraphQL.Client.Abstractions
 @using GraphQL.Client.Http
 @using Data;
-@using Extensions;
+
+@page "/find"
 
 @inject IJSRuntime jsRuntime
 @inject IGraphQLClient gclient
 
 @*//TODO: Get Location from Requester IP, if gps location is not available*@
+@*//TODO: Think about server side caching *@
 
 <h3>Find</h3>
 
-@if (shops.Any())
+@if(shops.Any())
 {
-    <ul>
-        <li><a href=@selectedShop.Url>@selectedShop.Name</a></li>
-            <li>@selectedShop.Rating</li>
-            <li>@selectedShop.Price</li>
-            <li>@toMiles(selectedShop.Distance).ToString("0.00") Miles Away</li>
+    foreach(var shop in shops.Where(x=>x.Categories.All(x=>x.Title.Contains("Gas Stations") != true)))
+    {
+        <ul>
+            <ul>
+                <li><a href=@shop.Url>@shop.Name</a></li>
+                <ul> 
+                    <li>@shop.Rating</li>
+                    <li>@shop.Price</li>
+                    <li>@toMiles(shop.Distance).ToString("0.00") Miles Away</li>
+                
+                @foreach(var category in shop.Categories)
+                {
+                    <ul>
+                        <li>@category.Title</li>
+                   </ul>
+                }
+            </ul></ul>
+        </ul>
+    }
 
-            @foreach(var category in selectedShop.Categories) {
-                <ul>
-                    <li>@category.Title</li>
-                </ul>
-            }
-    </ul>
 }else{
     <p>Please enable GeoLocation</p>
 }
 
 @code{
-    private List<Business> shops = new();
-    private Business selectedShop;
+    List<Business> shops = new();
     private WindowInterop window;
     private GeolocationResult? currentPosition;
 
@@ -61,12 +70,9 @@
             var request = Query.GetAllCategory(currentPosition?.getLocation() ?? "get location from IP, I guess");
             var response = await gclient.SendQueryAsync<YelpResponse>(request);
 
-            shops = response?.Data?.Search?.Business?.Where(x=>x.Categories.All(x=>x.Title.Contains("Gas Stations") != true)).ToList() 
-                    ?? shops;
+            shops = response?.Data?.Search?.Business?.ToList() ?? shops;
             await window.LocalStorage.SetItem("Business", shops);
             await window.LocalStorage.SetItem("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
-
-            selectedShop = shops.GetRandom();
         }
     }
 

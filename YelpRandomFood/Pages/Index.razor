@@ -7,31 +7,9 @@
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world!</h1>
-
-Welcome to your new app.
-
-<SurveyPrompt Title="How is Blazor working for you?" />
-
-@if (currentPosition?.Location is not null)
-{
-    <p>@currentPosition?.Location?.Coords.Latitude.ToString(), @currentPosition?.Location?.Coords.Longitude</p>
-}
-@if(currentPosition?.Error is not null)
-{
-    <p>@currentPosition.Error.Message</p>
-
-}
-
+<Find></Find>
 
 @code{
-    private GeolocationResult currentPosition;
 
-    protected override async Task OnInitializedAsync(){
-        await base.OnInitializedAsync();
-        var window = await jsRuntime.Window();
-        var navigator = await window.Navigator();
-        currentPosition = await navigator.Geolocation.GetCurrentPosition();
-    }
     
 }
