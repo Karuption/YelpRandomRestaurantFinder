@@ -27,9 +27,9 @@
                 </ul>
             }
     </ul>
-}else{
-    <p>Please enable GeoLocation</p>
-}
+}else { <p>Please enable GeoLocation</p> }
+
+
 
 @code{
     private List<Business> shops = new();
@@ -38,6 +38,7 @@
     private GeolocationResult? currentPosition;
 
     protected override async Task OnInitializedAsync() {
+        await base.OnInitializedAsync();
         window = await jsRuntime.Window();
         var navigator = await window.Navigator();
         var newPos = await navigator.Geolocation.GetCurrentPosition();
@@ -47,18 +48,18 @@
         if (newPos.hasChanged(currentPosition))
             currentPosition = newPos;
 
-        if (currentPosition?.Error is not null) 
-            return;//TODO: update Geolocation by IP?
+        if (currentPosition?.Location is  null) {
+            return;
+        }
 
         try {
             cacheDate = await window.LocalStorage.GetItem<DateTime?>("BusinessCacheDateTime");
-            var shopCache = await window.LocalStorage.GetItem<List<Business>?>("Business");
-            shops = shopCache ?? shops;
+            shops = await window.LocalStorage.GetItem<List<Business>?>("Business") ?? shops;
         } catch (Exception ex) {}
 
         if (cacheDate is null || DateTime.UtcNow >= cacheDate) {
 
-            var request = Query.GetAllCategory(currentPosition?.getLocation() ?? "get location from IP, I guess");
+            var request = Query.GetAllCategory(currentPosition?.getLocation() ?? "Do IP based lookup");
             var response = await gclient.SendQueryAsync<YelpResponse>(request);
 
             shops = response?.Data?.Search?.Business?.Where(x=>x.Categories.All(x=>x.Title.Contains("Gas Stations") != true)).ToList() 
@@ -77,4 +78,5 @@
         (current.Hour < 30)
             ?current.AddMinutes(30 - current.Minute)
             :current.AddMinutes(59 - current.Minute + 1);
+
 }
