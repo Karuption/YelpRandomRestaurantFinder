@@ -13,7 +13,7 @@
 
 <h3>Find</h3>
 
-@if (shops.Any())
+@if (selectedShop is not null)
 {
     <ul>
         <li><a href=@selectedShop.Url>@selectedShop.Name</a></li>
@@ -33,7 +33,7 @@
 
 @code{
     private List<Business> shops = new();
-    private Business selectedShop;
+    private Business? selectedShop;
     private WindowInterop window;
     private GeolocationResult? currentPosition;
 
@@ -54,7 +54,8 @@
 
         try {
             cacheDate = await window.LocalStorage.GetItem<DateTime?>("BusinessCacheDateTime");
-            shops = await window.LocalStorage.GetItem<List<Business>?>("Business") ?? shops;
+            var shopsCache = await window.LocalStorage.GetItem<List<Business>?>("Business");
+            shops = shopsCache ?? shops;
         } catch (Exception ex) {}
 
         if (cacheDate is null || DateTime.UtcNow >= cacheDate) {
@@ -66,9 +67,8 @@
                     ?? shops;
             await window.LocalStorage.SetItem("Business", shops);
             await window.LocalStorage.SetItem("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
-
-            selectedShop = shops.GetRandom();
         }
+        selectedShop = shops.GetRandom();
     }
 
     public static double toMiles(double meters) =>
