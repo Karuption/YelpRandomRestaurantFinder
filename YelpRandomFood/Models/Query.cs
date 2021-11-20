@@ -10,6 +10,7 @@
                         distance
                         price
                         url
+                        photos
                         categories{ title }
                         }
                     }

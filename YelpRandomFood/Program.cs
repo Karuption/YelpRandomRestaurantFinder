@@ -3,6 +3,7 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 
 using YelpRandomRestaurantFinder.Data;
+using YelpRandomRestaurantFinder.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,8 @@ var gcloptions = new GraphQLHttpClientOptions() {
     }
 };
 builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient(gcloptions, new SystemTextJsonSerializer(), new HttpClient()));
+
+builder.Services.AddScoped<ILocationService, LocationService>();
 
 builder.Services.AddLogging();
 

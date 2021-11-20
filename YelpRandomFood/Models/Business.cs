@@ -13,7 +13,7 @@
         //public string Phone { get; set; }
         //public string Display_Phone { get; set; }
         //public int Review_Count { get; set; }
-        //public string Photos { get; set; }
+        public IList<string> Photos { get; set; }
         //public Hours Hours { get; set; }
         //public IList<Review> Reviews { get; set; }
         //public BusinessMessaging messaging { get; set; }

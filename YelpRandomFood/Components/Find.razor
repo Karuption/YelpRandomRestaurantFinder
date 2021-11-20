@@ -1,13 +1,18 @@
 ﻿@using BrowserInterop
 @using BrowserInterop.Geolocation
 @using BrowserInterop.Extensions
+
 @using GraphQL.Client.Abstractions
 @using GraphQL.Client.Http
 @using Data;
 @using Extensions;
 
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@inject ProtectedLocalStorage ProtectedLocalStore
+
 @inject IJSRuntime jsRuntime
 @inject IGraphQLClient gclient
+@inject ILocationService LocationService
 
 @*//TODO: Get Location from Requester IP, if gps location is not available*@
 
@@ -15,6 +20,9 @@
 
 @if (selectedShop is not null)
 {
+    @foreach (var photo in selectedShop.Photos) {
+        <img src=@photo />
+    }
     <ul>
         <li><a href=@selectedShop.Url>@selectedShop.Name</a></li>
             <li>@selectedShop.Rating</li>
@@ -40,35 +48,31 @@
     protected override async Task OnInitializedAsync() {
         await base.OnInitializedAsync();
         window = await jsRuntime.Window();
-        var navigator = await window.Navigator();
-        var newPos = await navigator.Geolocation.GetCurrentPosition();
+        DateTime? cacheDate=null;
 
-        DateTime? cacheDate = null;
+        (currentPosition, bool hasChanged) = await LocationService.GetLocation(currentPosition);
 
-        if (newPos.hasChanged(currentPosition))
-            currentPosition = newPos;
-
-        if (currentPosition?.Location is  null) {
-            return;
+        if (!hasChanged) {
+            try {
+                cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value;
+                var shopsCache = await ProtectedLocalStore.GetAsync<List<Business>?>("Business");
+                shops = shopsCache.Value ?? shops;
+            } catch (Exception ex) { }
+        }
+        if(currentPosition is null || currentPosition.Error is not null) {
+            await window.LocalStorage.Clear();
         }
 
-        try {
-            cacheDate = await window.LocalStorage.GetItem<DateTime?>("BusinessCacheDateTime");
-            var shopsCache = await window.LocalStorage.GetItem<List<Business>?>("Business");
-            shops = shopsCache ?? shops;
-        } catch (Exception ex) {}
-
-        if (cacheDate is null || DateTime.UtcNow >= cacheDate) {
-
-            var request = Query.GetAllCategory(currentPosition?.getLocation() ?? "Do IP based lookup");
+        if (cacheDate is null || hasChanged || DateTime.UtcNow >= cacheDate) {
+            var request = Query.GetAllCategory(currentPosition?.getCoords());
             var response = await gclient.SendQueryAsync<YelpResponse>(request);
 
             shops = response?.Data?.Search?.Business?.Where(x=>x.Categories.All(x=>x.Title.Contains("Gas Stations") != true)).ToList() 
                     ?? shops;
-            await window.LocalStorage.SetItem("Business", shops);
-            await window.LocalStorage.SetItem("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
+            await ProtectedLocalStore.SetAsync("Business", shops);
+            await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
         }
-        selectedShop = shops.GetRandom();
+        selectedShop = shops?.GetRandom();
     }
 
     public static double toMiles(double meters) =>

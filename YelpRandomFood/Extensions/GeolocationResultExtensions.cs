@@ -15,7 +15,7 @@ namespace YelpRandomRestaurantFinder.Data {
                    && x!.Location!.Coords.Longitude != y!.Location!.Coords.Longitude;
         }
 
-        public static string? getLocation(this GeolocationResult x) {
+        public static string? getCoords(this GeolocationResult x) {
             StringBuilder loc = new();
             if (x?.Location?.Coords is not null) {
                 loc.Append(x.Location.Coords.Latitude.ToString());
