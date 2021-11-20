@@ -5,6 +5,7 @@ using BrowserInterop.Geolocation;
 namespace YelpRandomRestaurantFinder.Data {
     public static class GeolocationResultExtensions {
         public static bool hasChanged(this GeolocationResult? x, GeolocationResult? y) {
+            if(x?.Error is not null && y?.Location is null) return false;
             if (x == null && y == null) return false;
             if (x == null || y == null) return true;
 

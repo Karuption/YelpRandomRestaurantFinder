@@ -9,8 +9,13 @@ namespace YelpRandomRestaurantFinder.Data {
 
     public class LocationService : ILocationService {
         private IJSRuntime _jsRuntime;
-        public LocationService(IJSRuntime JSRuntime) {
+        private readonly ILogger logger;
+        private readonly HttpContext httpContext;
+
+        public LocationService(IJSRuntime JSRuntime, ILogger<LocationService> logger, IHttpContextAccessor contexAccessor) {
             _jsRuntime = JSRuntime;
+            this.logger = logger;
+            httpContext = contexAccessor.HttpContext;
         }
 
         /// <summary>
@@ -28,11 +33,10 @@ namespace YelpRandomRestaurantFinder.Data {
                 return (newPos, true);
 
             if (currentPosition?.Location is null) {
-                throw new NotImplementedException();
+                logger.LogInformation($"Unable to resolve location for IP {httpContext.Connection.RemoteIpAddress}");
             }
 
             return (currentPosition, false);
         }
     }
-
 }

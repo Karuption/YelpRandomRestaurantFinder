@@ -3,7 +3,6 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 
 using YelpRandomRestaurantFinder.Data;
-using YelpRandomRestaurantFinder.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +12,7 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
 
 builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
 
 var gcloptions = new GraphQLHttpClientOptions() {
     EndPoint = new(builder.Configuration.GetSection("Yelp")["Url"]),
@@ -26,6 +26,7 @@ builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient(gcloptions
 builder.Services.AddScoped<ILocationService, LocationService>();
 
 builder.Services.AddLogging();
+builder.Logging.AddConsole();
 
 var app = builder.Build();
 
