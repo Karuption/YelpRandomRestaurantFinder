@@ -1,10 +1,10 @@
-﻿namespace YelpRandomRestaurantFinder.Data {
-    public class YelpResponse {
-        public Search? Search { get; set; }
-    }
+﻿namespace YelpRandomRestaurantFinder.Data;
 
-    public class Search {
-        public IList<Business>? Business { get; set; }
-        public int? total { get; set; }
-    }
+public class YelpResponse {
+    public Search? Search { get; set; }
+}
+
+public class Search {
+    public IList<Business>? Business { get; set; }
+    public int? total { get; set; }
 }

@@ -4,6 +4,7 @@
 
 @using GraphQL.Client.Abstractions
 @using GraphQL.Client.Http
+
 @using Data;
 @using Extensions;
 
@@ -18,28 +19,29 @@
 
 <h3>Find</h3>
 
-@if (selectedShop is not null)
-{
+@if (selectedShop is not null) {
     @foreach (var photo in selectedShop.Photos) {
         <img src=@photo />
     }
     <ul>
         <li><a href=@selectedShop.Url>@selectedShop.Name</a></li>
-            <li>@selectedShop.Rating</li>
-            <li>@selectedShop.Price</li>
-            <li>@toMiles(selectedShop.Distance).ToString("0.00") Miles Away</li>
+        <li>@selectedShop.Rating</li>
+        <li>@selectedShop.Price</li>
+        <li>@toMiles(selectedShop.Distance).ToString("0.00") Miles Away</li>
 
-            @foreach(var category in selectedShop.Categories) {
-                <ul>
-                    <li>@category.Title</li>
-                </ul>
-            }
+        @foreach (var category in selectedShop?.Categories) {
+            <ul>
+                <li>@category.Title</li>
+            </ul>
+        }
     </ul>
-}else { <p>Please enable GeoLocation</p> }
+} else {
+     <p>Please enable GeoLocation</p>
+}
 
 
 
-@code{
+@code {
     private List<Business> shops = new();
     private Business? selectedShop;
     private WindowInterop window;
@@ -48,7 +50,7 @@
     protected override async Task OnInitializedAsync() {
         await base.OnInitializedAsync();
         window = await jsRuntime.Window();
-        DateTime? cacheDate=null;
+        DateTime? cacheDate = null;
 
         (currentPosition, bool hasChanged) = await LocationService.GetLocation(currentPosition);
 
@@ -59,7 +61,7 @@
                 shops = shopsCache.Value ?? shops;
             } catch (Exception ex) { }
         }
-        if(currentPosition is null || currentPosition.Error is not null) {
+        if (currentPosition is null || currentPosition.Error is not null) {
             await window.LocalStorage.Clear();
         }
 
@@ -67,10 +69,11 @@
             var request = Query.GetAllCategory(currentPosition?.getCoords());
             var response = await gclient.SendQueryAsync<YelpResponse>(request);
 
-            shops = response?.Data?.Search?.Business?.Where(x=>x.Categories.All(x=>x.Title.Contains("Gas Stations") != true)).ToList() 
+            shops = response?.Data?.Search?.Business?.Where(x => x.Categories.All(x => x.Title.Contains("Gas Stations") != true)).ToList()
                     ?? shops;
             await ProtectedLocalStore.SetAsync("Business", shops);
             await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
+
         }
         selectedShop = shops?.GetRandom();
     }
@@ -79,8 +82,8 @@
         meters * 0.000621371192;
 
     public static DateTime roundUp30(DateTime current) =>
-        (current.Hour < 30)
-            ?current.AddMinutes(30 - current.Minute)
-            :current.AddMinutes(59 - current.Minute + 1);
+        current.Hour < 30
+            ? current.AddMinutes(30 - current.Minute)
+            : current.AddMinutes(59 - current.Minute + 1);
 
 }

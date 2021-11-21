@@ -14,14 +14,14 @@ builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
-var gcloptions = new GraphQLHttpClientOptions() {
+GraphQLHttpClientOptions gcloptions = new () {
     EndPoint = new(builder.Configuration.GetSection("Yelp")["Url"]),
     PreprocessRequest = (request, client) => {
         client.HttpClient.DefaultRequestHeaders.Authorization = new("bearer", builder.Configuration["Yelp:ApiKey"]);
         return Task.FromResult(request is GraphQLHttpRequest graphQLHttpRequest ? graphQLHttpRequest : new GraphQLHttpRequest(request));
     }
 };
-builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient(gcloptions, new SystemTextJsonSerializer(), new HttpClient()));
+builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient( gcloptions, new SystemTextJsonSerializer(), new HttpClient()));
 
 builder.Services.AddScoped<ILocationService, LocationService>();
 
