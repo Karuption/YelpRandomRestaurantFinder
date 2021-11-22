@@ -7,6 +7,7 @@
 
 @using Data;
 @using Extensions;
+@using Models
 
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject ProtectedLocalStorage ProtectedLocalStore
@@ -14,10 +15,18 @@
 @inject IJSRuntime jsRuntime
 @inject IGraphQLClient gclient
 @inject ILocationService LocationService
+@inject ILogger<YelpResponse> _logger
 
 @*//TODO: Get Location from Requester IP, if gps location is not available*@
 
 <h3>Find</h3>
+<EditForm Model=@_overrideLocation>
+    <div classs="form-group">
+        <label for="PositionOverride">Override Position</label>
+        <InputText @bind-Value=@_overrideLocation.OverridenLocation placeholder=@_currentSearchPosition.OverridenLocation />
+            <button class="btn btn-primary"  @onclick="overrideSearch">Override</button>
+    </div>
+</EditForm>
 
 @if (selectedShop is not null) {
     @foreach (var photo in selectedShop.Photos) {
@@ -36,7 +45,7 @@
         }
     </ul>
 } else {
-     <p>Please enable GeoLocation</p>
+     <p>GeoLocation is not available</p>
 }
 
 
@@ -44,40 +53,43 @@
 @code {
     private List<Business> shops = new();
     private Business? selectedShop;
-    private WindowInterop window;
-    private GeolocationResult? currentPosition;
+    private SearchLocation _currentSearchPosition = new();
+    private SearchLocation _overrideLocation = new();
+    private DateTime? cacheDate = null;
 
     protected override async Task OnInitializedAsync() {
         await base.OnInitializedAsync();
-        window = await jsRuntime.Window();
-        DateTime? cacheDate = null;
 
-        (currentPosition, bool hasChanged) = await LocationService.GetLocation(currentPosition);
+        cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value;
+        shops = (await ProtectedLocalStore.GetAsync<List<Business>?>("Business")).Value ?? shops;
 
-        if (!hasChanged) {
-            try {
-                cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value;
-                var shopsCache = await ProtectedLocalStore.GetAsync<List<Business>?>("Business");
-                shops = shopsCache.Value ?? shops;
-            } catch (Exception ex) { }
-        }
-        if (currentPosition is null || currentPosition.Error is not null) {
-            await window.LocalStorage.Clear();
+        (_currentSearchPosition, bool hasChanged) = await LocationService.GetLocation(_currentSearchPosition, _overrideLocation);
+
+        if (hasChanged) await GetYelpData();
+
+        if (_currentSearchPosition is null || _currentSearchPosition.Error is not null) {
+            await clearCache();
         }
 
-        if (cacheDate is null || hasChanged || DateTime.UtcNow >= cacheDate) {
-            var request = Query.GetAllCategory(currentPosition?.getCoords());
-            var response = await gclient.SendQueryAsync<YelpResponse>(request);
-
-            shops = response?.Data?.Search?.Business?.Where(x => x.Categories.All(x => x.Title.Contains("Gas Stations") != true)).ToList()
-                    ?? shops;
-            await ProtectedLocalStore.SetAsync("Business", shops);
-            await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
-
-        }
-        selectedShop = shops?.GetRandom();
+        if (cacheDate is null || hasChanged || DateTime.UtcNow >= cacheDate) 
+            await GetYelpData();
+        getRandomShop();
     }
 
+    private async void overrideSearch() {
+        if (_overrideLocation?.OverridenLocation is null || _overrideLocation.OverridenLocation.Equals("")) {
+            getRandomShop();
+            return;
+        }
+        _overrideLocation.isOverridden = true;
+        if (_overrideLocation.hasChanged(_currentSearchPosition)) {
+            await clearCache();
+            _currentSearchPosition = _overrideLocation;
+            _overrideLocation = new();
+            await GetYelpData();
+        }
+        getRandomShop();
+    }
     public static double toMiles(double meters) =>
         meters * 0.000621371192;
 
@@ -86,4 +98,30 @@
             ? current.AddMinutes(30 - current.Minute)
             : current.AddMinutes(59 - current.Minute + 1);
 
+    public async Task GetYelpData() {
+        var request = Query.GetAllCategory(_currentSearchPosition?.getCurrentLocation());
+
+        var response = await gclient.SendQueryAsync<YelpResponse>(request);
+        if (response.Errors is not null) {
+            _logger.LogError($"GraphQL Response Error: {response.Errors[0].Message}");
+            return;
+        }
+
+
+        shops = response?.Data?.Search?.Business?.Where(x => x.Categories.All(x => x.Title.Contains("Gas Stations") != true)).ToList()
+                ?? shops;
+        await ProtectedLocalStore.SetAsync("Business", shops);
+        await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
+    }
+
+    public async Task clearCache() {
+        await ProtectedLocalStore.DeleteAsync("Business");
+        await ProtectedLocalStore.DeleteAsync("BusinessCacheDateTime");
+        cacheDate = null;
+    }
+
+    public void getRandomShop() {
+        selectedShop = shops?.GetRandom();
+        StateHasChanged();
+    }
 }
