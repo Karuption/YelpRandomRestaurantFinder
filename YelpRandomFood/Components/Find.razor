@@ -13,21 +13,23 @@
 @inject ILocationService LocationService
 @inject ILogger<YelpResponse> _logger
 
-@*//TODO: Get Location from Requester IP, if gps location is not available*@
-
 <h3 class="text-primary">Find</h3>
 <EditForm Model=@overridenPosition>
     <div classs="form-group">
         <label for="PositionOverride" class="form-label">Override Position</label>
         <InputText class="form-text" @bind-Value=@overridenPosition.OverridenLocation />
-                <button class="btn btn-primary" @onclick="FilterorOverride">Override</button>
-        <h3 class="h3">All Categories</h3>
+        <label for="distance"><input type="range" class="slider" step=".1" min="1" max="25" @bind-value=@searchRange @bind-value:event="oninput"></input></label>
+        <h5 class="h5">Categories</h5>
         <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a>/<a @onclick="args=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
+        <ul class="list-group">
+            @foreach(var cat in categoriesFilter.Keys ) {
+                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)">
+                    <input type="checkbox" value=@cat @bind=@categoriesFilter[cat]>
+                    <label >@cat</label>
+                </li>
+            }
+        </ul>
         <button class="btn btn-primary" @onclick="FilterorOverride">Submit</button>
-        @foreach(var cat in categoriesFilter.Keys ) {
-            <input type="checkbox" value=@cat @oninput="x => toggleCategory((bool) x.Value, cat)" @bind=@categoriesFilter[cat]>
-            <label >@cat</label>
-        }
     </div>
 </EditForm>
 
@@ -61,6 +63,7 @@
     private SearchLocation currentPosition = new();
     private SearchLocation overridenPosition = new();
     private DateTime? cacheDate = null;
+    private float searchRange = 5;//search radius in miles
 
     protected override async Task OnInitializedAsync() {
         await base.OnInitializedAsync();
@@ -100,9 +103,9 @@
         getRandomShop();
     }
     public static double toMiles(double meters) =>
-        meters * 0.000621371192;
-    public static double toMeters(double miles) =>
-        miles / 0.000621371192;
+        (float) (meters * 0.000621371192);
+    public static float toMeters(float miles) =>
+        (float) (miles / 0.000621371192);
 
     public static DateTime roundUp30(DateTime current) =>
         current.Hour < 30
@@ -110,7 +113,7 @@
             : current.AddMinutes(59 - current.Minute);
 
     public async Task GetYelpData() {
-        var request = Query.GetAllCategory(currentPosition?.getCurrentLocation());
+        var request = Query.GetAllCategory(currentPosition?.getCurrentLocation(), toMeters(searchRange));
         var response = await gclient.SendQueryAsync<YelpResponse>(request);
 
         if (response.Errors is not null) {
@@ -144,7 +147,7 @@
     }
     public void toggleCategory(bool isChecked, string catTitle) {
         if (categoriesFilter.ContainsKey(catTitle))
-            categoriesFilter[catTitle] = isChecked;
+            categoriesFilter[catTitle] = !isChecked;
     }
     public void updateAllCategoryFilter(bool isChecked) {
         foreach (var key in categoriesFilter.Keys)
