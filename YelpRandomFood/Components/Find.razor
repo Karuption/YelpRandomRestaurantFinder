@@ -20,10 +20,12 @@
     <div classs="form-group">
         <label for="PositionOverride" class="form-label">Override Position</label>
         <InputText class="form-text" @bind-Value=@overridenPosition.OverridenLocation />
-                <button class="btn btn-primary" @onclick="overrideSearch">Override</button>
+                <button class="btn btn-primary" @onclick="FilterorOverride">Override</button>
         <h3 class="h3">All Categories</h3>
-        @foreach(var cat in selectedCategories.Keys ) {
-            <input type="checkbox" value=@cat @oninput="x => toggleCategory((bool) x.Value, cat)" checked>
+        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a>/<a @onclick="args=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
+        <button class="btn btn-primary" @onclick="FilterorOverride">Submit</button>
+        @foreach(var cat in categoriesFilter.Keys ) {
+            <input type="checkbox" value=@cat @oninput="x => toggleCategory((bool) x.Value, cat)" @bind=@categoriesFilter[cat]>
             <label >@cat</label>
         }
     </div>
@@ -55,7 +57,7 @@
 @code {
     private List<Business> locations = new();
     private Business? selectedLocations;
-    private Dictionary<string, bool> selectedCategories = new();
+    private Dictionary<string, bool> categoriesFilter = new();
     private SearchLocation currentPosition = new();
     private SearchLocation overridenPosition = new();
     private DateTime? cacheDate = null;
@@ -66,6 +68,7 @@
 
         cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value;
         locations = (await ProtectedLocalStore.GetAsync<List<Business>?>("Business")).Value ?? locations;
+        categoriesFilter = (await ProtectedLocalStore.GetAsync<Dictionary<string, bool>>("categoriesFilter")).Value ?? categoriesFilter;
 
         (currentPosition, bool hasChanged) = await LocationService.GetLocation(currentPosition, overridenPosition);
 
@@ -82,9 +85,8 @@
         getRandomShop();
     }
 
-    private async void overrideSearch() {
-        if (overridenPosition?.OverridenLocation is null || overridenPosition.OverridenLocation.Equals("") || overridenPosition.OverridenLocation.Equals("Enter a location")) {
-            //is this ever null with the one way binding or is this an extra guard clause?
+    private async void FilterorOverride() {
+        if (overridenPosition.OverridenLocation.Equals("") || overridenPosition.OverridenLocation.Equals("Enter a location")) {
             getRandomShop();
             return;
         }
@@ -122,23 +124,31 @@
         locations = response?.Data?.Search?.Business.ToList() ?? locations;
 
         foreach (var title in locations.SelectMany(x => x.Categories.Select(x => x.Title)).Distinct())
-            if(!selectedCategories.ContainsKey(title)) selectedCategories.Add((string)title, true);
+            if(!categoriesFilter.ContainsKey(title)) categoriesFilter.Add((string)title, true);
         await ProtectedLocalStore.SetAsync("Business", locations);
         await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
+        await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
     }
 
     public async Task clearCache() {
         await ProtectedLocalStore.DeleteAsync("Business");
         await ProtectedLocalStore.DeleteAsync("BusinessCacheDateTime");
+        await ProtectedLocalStore.DeleteAsync("categoriesFilter");
         cacheDate = null;
     }
 
-    public void getRandomShop(string value = "") {
-        selectedLocations = locations.Where(x=>x.Categories.Any(x=> selectedCategories.ContainsKey(x.Title)&&selectedCategories[x.Title])).GetRandom();
+    public async Task getRandomShop(string value = "") {
+        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])).GetRandom();
+        await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
         StateHasChanged();
     }
     public void toggleCategory(bool isChecked, string catTitle) {
-        if (selectedCategories.ContainsKey(catTitle))
-            selectedCategories[catTitle] = isChecked;
+        if (categoriesFilter.ContainsKey(catTitle))
+            categoriesFilter[catTitle] = isChecked;
+    }
+    public void updateAllCategoryFilter(bool isChecked) {
+        foreach (var key in categoriesFilter.Keys)
+            categoriesFilter[key] = isChecked;
+        StateHasChanged();
     }
 }
