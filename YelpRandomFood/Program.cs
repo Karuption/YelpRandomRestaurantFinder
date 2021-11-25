@@ -24,6 +24,7 @@ GraphQLHttpClientOptions gcloptions = new () {
 builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient( gcloptions, new SystemTextJsonSerializer(), new HttpClient()));
 
 builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<IYelpRetrievalService, YelpRetrievalService>();
 
 builder.Services.AddLogging();
 builder.Logging.AddConsole();
