@@ -14,13 +14,13 @@
 <EditForm Model=@overridenPosition>
     <div classs="form-group">
         <label for="PositionOverride" class="form-label">Override Position</label>
-        <InputText class="form-text" @bind-Value=@overridenPosition.OverridenLocation />
-        <label for="distance"><input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput"></input></label>
+        <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
+        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
         <h5 class="h5">Categories</h5>
-        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a>/<a @onclick="_=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
-        <ul class="list-group">
+        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a> / <a @onclick="_=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
+        <ul class="list-group" style="display:inline-block">
             @foreach(var cat in categoriesFilter.Keys ) {
-                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)">
+                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="display:inline-block;width:16em">
                     <input type="checkbox" value=@cat @bind=@categoriesFilter[cat]>
                     <label >@cat</label>
                 </li>
@@ -89,15 +89,20 @@
     }
 
     private async void formSubmit() {
-        if (overridenPosition.OverridenLocation is not null && !overridenPosition.OverridenLocation.Equals("") && !overridenPosition.OverridenLocation.Equals("Enter a location")) {
+        bool overriden = false;
+        if (!overridenPosition.OverridenLocation.Equals("") && !overridenPosition.OverridenLocation.Equals("Enter a location")) {
             overridenPosition.isOverridden = true;
-            currentPosition = overridenPosition;
-            overridenPosition = new();
+            overriden = true;
         }
 
         if (overridenPosition.hasChanged(currentPosition) || searchRange > queriedRange) {
             await clearCache();
-            updateVariables( await yelp.GetYelpData(currentPosition.getCurrentLocation(), searchRange) );
+            updateVariables( await yelp.GetYelpData(overriden?overridenPosition.getCurrentLocation():currentPosition.getCurrentLocation(), searchRange) );
+            if (overriden) {
+                currentPosition = overridenPosition;
+                overridenPosition = new();
+                overridenPosition.OverridenLocation = currentPosition.OverridenLocation.ToString();
+            }
             await setCache();
         }
         getRandomShop();
@@ -112,7 +117,7 @@
     }
 
     public async Task getRandomShop(string value = "") {
-        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])).GetRandom();
+        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
         await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
         StateHasChanged();
     }

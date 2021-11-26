@@ -7,8 +7,8 @@ namespace YelpRandomRestaurantFinder.Data;
 public static class LocationExtensions {
 
     public static bool hasChanged(this SearchLocation? x, SearchLocation? y) {
-        if (x == null) {
-            if (y == null)
+        if (x is null) {
+            if (y is null)
                 return false;
             return true;
         }
