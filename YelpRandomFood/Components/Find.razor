@@ -1,33 +1,32 @@
-﻿@using GraphQL.Client.Abstractions
-@using GraphQL.Client.Http
-
-@using Extensions;
+﻿@using YelpRandomRestaurantFinder.Data
+@using YelpRandomRestaurantFinder.Extensions
 @using Models
 
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
-@using YelpRandomRestaurantFinder.Data
 @inject ProtectedLocalStorage ProtectedLocalStore
 
 @inject IJSRuntime jsRuntime
-@inject IGraphQLClient gclient
 @inject ILocationService LocationService
+@inject IYelpRetrievalService yelp
 @inject ILogger<YelpResponse> _logger
-
-@*//TODO: Get Location from Requester IP, if gps location is not available*@
 
 <h3 class="text-primary">Find</h3>
 <EditForm Model=@overridenPosition>
     <div classs="form-group">
         <label for="PositionOverride" class="form-label">Override Position</label>
-        <InputText class="form-text" @bind-Value=@overridenPosition.OverridenLocation />
-                <button class="btn btn-primary" @onclick="FilterorOverride">Override</button>
-        <h3 class="h3">All Categories</h3>
-        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a>/<a @onclick="args=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
-        <button class="btn btn-primary" @onclick="FilterorOverride">Submit</button>
-        @foreach(var cat in categoriesFilter.Keys ) {
-            <input type="checkbox" value=@cat @oninput="x => toggleCategory((bool) x.Value, cat)" @bind=@categoriesFilter[cat]>
-            <label >@cat</label>
-        }
+        <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
+        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
+        <h5 class="h5">Categories</h5>
+        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a> / <a @onclick="_=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
+        <ul class="list-group" style="display:inline-block">
+            @foreach(var cat in categoriesFilter.Keys ) {
+                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="display:inline-block;width:16em">
+                    <input type="checkbox" value=@cat @bind=@categoriesFilter[cat]>
+                    <label >@cat</label>
+                </li>
+            }
+        </ul>
+        <button class="btn btn-primary" @onclick="formSubmit">Submit</button>
     </div>
 </EditForm>
 
@@ -39,7 +38,7 @@
         <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocations.Url>@selectedLocations.Name</a></li>
         <li class="list-group list-group-item">Rating: @selectedLocations.Rating</li>
         <li class="list-group list-group-item">Price: @selectedLocations.Price</li>
-        <li class="list-group list-group-item">Distance: @toMiles(selectedLocations.Distance).ToString("0.00") Miles Away</li>
+        <li class="list-group list-group-item">Distance: @ShopExtensions.toMiles(selectedLocations.Distance).ToString("0.00") Miles Away</li>
         <li class="list-group list-group-item"><h5 class="h5">Categories</h5>
         <ul>
             @foreach (var category in selectedLocations?.Categories) {
@@ -60,95 +59,89 @@
     private Dictionary<string, bool> categoriesFilter = new();
     private SearchLocation currentPosition = new();
     private SearchLocation overridenPosition = new();
-    private DateTime? cacheDate = null;
+    private DateTime? cacheDate = DateTime.UtcNow;
+    private float searchRange = 5;//search radius in miles
+    private float queriedRange = 0;
 
     protected override async Task OnInitializedAsync() {
         await base.OnInitializedAsync();
         overridenPosition.OverridenLocation = "Enter a location";
 
-        cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value;
+        cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value ?? cacheDate;
         locations = (await ProtectedLocalStore.GetAsync<List<Business>?>("Business")).Value ?? locations;
         categoriesFilter = (await ProtectedLocalStore.GetAsync<Dictionary<string, bool>>("categoriesFilter")).Value ?? categoriesFilter;
+        queriedRange = (await ProtectedLocalStore.GetAsync<float?>("QuriedRange")).Value ?? queriedRange;
 
         (currentPosition, bool hasChanged) = await LocationService.GetLocation(currentPosition, overridenPosition);
-
-        if (hasChanged) await GetYelpData();
 
         if (currentPosition is null || currentPosition.Error is not null) {
             await clearCache(); //if there is no position, overridden or not, there is nothing to get.
             return;
         }
 
-        if (cacheDate is null || hasChanged || DateTime.UtcNow >= cacheDate) 
-            await GetYelpData();
+        //if the position has changed, cache is out of date, is no cache or if the search radius has changed
+        if (hasChanged || DateTime.UtcNow >= cacheDate || searchRange > queriedRange) { 
+            updateVariables( await yelp.GetYelpData(currentPosition.getCurrentLocation(), searchRange) );
+            await setCache();
+        }
 
         getRandomShop();
     }
 
-    private async void FilterorOverride() {
-        if (overridenPosition.OverridenLocation.Equals("") || overridenPosition.OverridenLocation.Equals("Enter a location")) {
-            getRandomShop();
-            return;
+    private async void formSubmit() {
+        bool overriden = false;
+        if (!overridenPosition.OverridenLocation.Equals("") && !overridenPosition.OverridenLocation.Equals("Enter a location")) {
+            overridenPosition.isOverridden = true;
+            overriden = true;
         }
-        overridenPosition.isOverridden = true;
-        if (overridenPosition.hasChanged(currentPosition)) {
+
+        if (overridenPosition.hasChanged(currentPosition) || searchRange > queriedRange) {
             await clearCache();
-            currentPosition = overridenPosition;
-            overridenPosition = new();
-            await GetYelpData();
+            updateVariables( await yelp.GetYelpData(overriden?overridenPosition.getCurrentLocation():currentPosition.getCurrentLocation(), searchRange) );
+            if (overriden) {
+                currentPosition = overridenPosition;
+                overridenPosition = new();
+                overridenPosition.OverridenLocation = currentPosition.OverridenLocation.ToString();
+            }
+            await setCache();
         }
         getRandomShop();
     }
-    public static double toMiles(double meters) =>
-        meters * 0.000621371192;
-    public static double toMeters(double miles) =>
-        miles / 0.000621371192;
 
-    public static DateTime roundUp30(DateTime current) =>
-        current.Hour < 30
-            ? current.AddMinutes(39 - current.Minute)//round just short to account for seconds
-            : current.AddMinutes(59 - current.Minute);
-
-    public async Task GetYelpData() {
-        var request = Query.GetAllCategory(currentPosition?.getCurrentLocation());
-        var response = await gclient.SendQueryAsync<YelpResponse>(request);
-
-        if (response.Errors is not null) {
-            _logger.LogError($"GraphQL Response Error: {response.Errors[0].Message} for Location {request.Variables}");
-            await clearCache();
-            locations = new ();
-            return;
-        }
-
-
-        locations = response?.Data?.Search?.Business.ToList() ?? locations;
+    public void updateVariables(IList<Business> YelpUpdate) {
+        queriedRange = searchRange;
+        locations = YelpUpdate.ToList() ?? locations;
 
         foreach (var title in locations.SelectMany(x => x.Categories.Select(x => x.Title)).Distinct())
             if(!categoriesFilter.ContainsKey(title)) categoriesFilter.Add((string)title, true);
-        await ProtectedLocalStore.SetAsync("Business", locations);
-        await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", roundUp30(DateTime.UtcNow));
+    }
+
+    public async Task getRandomShop(string value = "") {
+        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
         await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
+        StateHasChanged();
+    }
+    public void toggleCategory(bool isChecked, string catTitle) {
+        if (categoriesFilter.ContainsKey(catTitle))
+            categoriesFilter[catTitle] = !isChecked;
+    }
+    public void updateAllCategoryFilter(bool isChecked) {
+        foreach (var key in categoriesFilter.Keys)
+            categoriesFilter[key] = isChecked;
+    }
+    
+    public async Task setCache() {
+        await ProtectedLocalStore.SetAsync("Business", locations);
+        await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", ShopExtensions.roundUp30(DateTime.UtcNow));
+        await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
+        await ProtectedLocalStore.SetAsync("QuriedRange", queriedRange);
     }
 
     public async Task clearCache() {
         await ProtectedLocalStore.DeleteAsync("Business");
         await ProtectedLocalStore.DeleteAsync("BusinessCacheDateTime");
         await ProtectedLocalStore.DeleteAsync("categoriesFilter");
+        await ProtectedLocalStore.DeleteAsync("QuriedRange");
         cacheDate = null;
-    }
-
-    public async Task getRandomShop(string value = "") {
-        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])).GetRandom();
-        await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
-        StateHasChanged();
-    }
-    public void toggleCategory(bool isChecked, string catTitle) {
-        if (categoriesFilter.ContainsKey(catTitle))
-            categoriesFilter[catTitle] = isChecked;
-    }
-    public void updateAllCategoryFilter(bool isChecked) {
-        foreach (var key in categoriesFilter.Keys)
-            categoriesFilter[key] = isChecked;
-        StateHasChanged();
     }
 }
