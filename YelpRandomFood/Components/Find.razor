@@ -1,7 +1,6 @@
 ﻿@using YelpRandomRestaurantFinder.Data
 @using YelpRandomRestaurantFinder.Extensions
 @using Models
-
 @using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject ProtectedLocalStorage ProtectedLocalStore
 
@@ -11,30 +10,32 @@
 @inject ILogger<YelpResponse> _logger
 
 <h3 class="text-primary">Find</h3>
-<EditForm Model=@overridenPosition>
     <div classs="form-group">
         <label for="PositionOverride" class="form-label">Override Position</label>
-        <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
-        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
+            <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
+        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> 
+            <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
+        
         <h5 class="h5">Categories</h5>
         <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a> / <a @onclick="_=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
-        <ul class="list-group" style="display:inline-block">
+        <ul class="list-group" style="display:inline-table">
             @foreach(var cat in categoriesFilter.Keys ) {
-                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="display:inline-block;width:16em">
+                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="width:17em;display:inline-table">
                     <input type="checkbox" value=@cat @bind=@categoriesFilter[cat]>
                     <label >@cat</label>
                 </li>
             }
         </ul>
+        
         <button class="btn btn-primary" @onclick="formSubmit">Submit</button>
     </div>
-</EditForm>
 
+<div style="width:fit-content">
 @if (selectedLocations is not null) {
+    <ul style="">
     @foreach (var photo in selectedLocations.Photos) {
         <img class="img img-thumbnail" src=@photo />
     }
-    <ul>
         <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocations.Url>@selectedLocations.Name</a></li>
         <li class="list-group list-group-item">Rating: @selectedLocations.Rating</li>
         <li class="list-group list-group-item">Price: @selectedLocations.Price</li>
@@ -49,7 +50,7 @@
     </ul>
 } else {
      <p>Restaurant information is not available</p>
-}
+}</div>
 
 
 
