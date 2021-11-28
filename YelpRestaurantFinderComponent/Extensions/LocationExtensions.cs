@@ -1,4 +1,5 @@
 ﻿using System.Text;
+
 using YelpRestaurantFinderComponent.Models;
 
 namespace YelpRestaurantFinderComponent.Extensions;
@@ -15,8 +16,9 @@ public static class LocationExtensions {
     }
 
     public static string? getCurrentLocation(this SearchLocation x) {
-        if(x.isOverridden) return x.OverridenLocation;
-        
+        if (x.isOverridden)
+            return x.OverridenLocation;
+
         StringBuilder loc = new();
         if (x?.Coords is not null) {
             loc.Append(x.Coords.Latitude.ToString());

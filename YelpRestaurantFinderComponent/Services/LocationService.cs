@@ -1,7 +1,9 @@
 ﻿using BrowserInterop.Extensions;
+
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+
 using YelpRestaurantFinderComponent.Extensions;
 using YelpRestaurantFinderComponent.Models;
 
@@ -32,14 +34,14 @@ public class LocationService : ILocationService {
         if (currentPosition is not null && overridenPosition is not null) {
             if (currentPosition.isOverridden)
                 return (overridenPosition, currentPosition.OverridenLocation == overridenPosition.OverridenLocation);
-            if(overridenPosition.isOverridden)
+            if (overridenPosition.isOverridden)
                 return (overridenPosition, true);
         }
 
 
         BrowserInterop.WindowInterop? window = await _jsRuntime.Window();
         BrowserInterop.WindowNavigator? navigator = await window.Navigator();
-        SearchLocation? newPos = (SearchLocation?) await navigator.Geolocation.GetCurrentPosition();
+        SearchLocation? newPos = (SearchLocation?)await navigator.Geolocation.GetCurrentPosition();
 
         if (newPos.hasChanged(currentPosition))
             return (newPos, true);
@@ -48,6 +50,6 @@ public class LocationService : ILocationService {
             logger.LogInformation($"Unable to resolve location for IP {httpContext.Connection.RemoteIpAddress}");
         }
 
-        return ((SearchLocation) currentPosition, false);
+        return ((SearchLocation)currentPosition, false);
     }
 }

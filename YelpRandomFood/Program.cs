@@ -3,9 +3,14 @@ using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
 
 using YelpRandomRestaurantFinder.Data;
+
 using YelpRestaurantFinderComponent.Services;
+using Azure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var keyVaultEndpoint = new Uri(Environment.GetEnvironmentVariable("VaultUri"));
+builder.Configuration.AddAzureKeyVault(keyVaultEndpoint, new DefaultAzureCredential());
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -15,14 +20,14 @@ builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
-GraphQLHttpClientOptions gcloptions = new () {
+GraphQLHttpClientOptions gcloptions = new() {
     EndPoint = new(builder.Configuration.GetSection("Yelp")["Url"]),
     PreprocessRequest = (request, client) => {
         client.HttpClient.DefaultRequestHeaders.Authorization = new("bearer", builder.Configuration["Yelp:ApiKey"]);
         return Task.FromResult(request is GraphQLHttpRequest graphQLHttpRequest ? graphQLHttpRequest : new GraphQLHttpRequest(request));
     }
 };
-builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient( gcloptions, new SystemTextJsonSerializer(), new HttpClient()));
+builder.Services.AddScoped<IGraphQLClient>(x => new GraphQLHttpClient(gcloptions, new SystemTextJsonSerializer(), new HttpClient()));
 
 builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<IYelpRetrievalService, YelpRetrievalService>();
