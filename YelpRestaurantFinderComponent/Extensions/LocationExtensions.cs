@@ -1,8 +1,7 @@
 ﻿using System.Text;
+using YelpRestaurantFinderComponent.Models;
 
-using YelpRandomRestaurantFinder.Models;
-
-namespace YelpRandomRestaurantFinder.Data;
+namespace YelpRestaurantFinderComponent.Extensions;
 
 public static class LocationExtensions {
 

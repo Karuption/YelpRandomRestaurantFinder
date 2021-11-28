@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace YelpRandomRestaurantFinder.Data;
+namespace YelpRestaurantFinderComponent.Models;
 
 public class Category : IEqualityComparer {
     public Category() {

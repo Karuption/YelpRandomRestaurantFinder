@@ -1,8 +1,6 @@
-﻿using System;
+﻿using BrowserInterop.Geolocation;
 
-using BrowserInterop.Geolocation;
-
-namespace YelpRandomRestaurantFinder.Models;
+namespace YelpRestaurantFinderComponent.Models;
 
 public class SearchLocation : IEquatable<SearchLocation> {
     public SearchLocation() {

@@ -1,8 +1,10 @@
-﻿@using YelpRandomRestaurantFinder.Data
-@using YelpRandomRestaurantFinder.Extensions
-@using Models
-
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+﻿@using YelpRestaurantFinderComponent.Models
+@using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.ProtectedBrowserStorage
+@using YelpRestaurantFinderComponent.Extensions
+@using YelpRestaurantFinderComponent.Services
 @inject ProtectedLocalStorage ProtectedLocalStore
 
 @inject IJSRuntime jsRuntime
@@ -10,38 +12,40 @@
 @inject IYelpRetrievalService yelp
 @inject ILogger<YelpResponse> _logger
 
-<h3 class="text-primary">Find</h3>
-<EditForm Model=@overridenPosition>
+<h3 class="text-primary">Find A Place To Eat!</h3>
     <div classs="form-group">
-        <label for="PositionOverride" class="form-label">Override Position</label>
-        <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
-        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
-        <h5 class="h5">Categories</h5>
-        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">CheckAll</a> / <a @onclick="_=>updateAllCategoryFilter(false)" href="#">unCheckAll</a>
-        <ul class="list-group" style="display:inline-block">
+        <label for="PositionOverride" class="form-label">Search Location</label>
+            <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
+        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> 
+            <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
+        
+        <h5 class="h5">Search Categories</h5>
+        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">Check All</a> / <a @onclick="_=>updateAllCategoryFilter(false)" href="#">Uncheck All</a>
+        <ul class="list-group" style="display:inline-table">
             @foreach(var cat in categoriesFilter.Keys ) {
-                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="display:inline-block;width:16em">
+                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="width:17em;display:inline-table">
                     <input type="checkbox" value=@cat @bind=@categoriesFilter[cat]>
                     <label >@cat</label>
                 </li>
             }
         </ul>
-        <button class="btn btn-primary" @onclick="formSubmit">Submit</button>
+        
+        <button class="btn btn-primary" @onclick="formSubmit">Search</button>
     </div>
-</EditForm>
 
-@if (selectedLocations is not null) {
-    @foreach (var photo in selectedLocations.Photos) {
+<div style="width:fit-content">
+@if (selectedLocation is not null) {
+    <ul style="">
+    @foreach (var photo in selectedLocation.Photos) {
         <img class="img img-thumbnail" src=@photo />
     }
-    <ul>
-        <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocations.Url>@selectedLocations.Name</a></li>
-        <li class="list-group list-group-item">Rating: @selectedLocations.Rating</li>
-        <li class="list-group list-group-item">Price: @selectedLocations.Price</li>
-        <li class="list-group list-group-item">Distance: @ShopExtensions.toMiles(selectedLocations.Distance).ToString("0.00") Miles Away</li>
+        <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocation.Url>@selectedLocation.Name</a></li>
+        <li class="list-group list-group-item">Rating: @selectedLocation.Rating</li>
+        <li class="list-group list-group-item">Price: @selectedLocation.Price</li>
+        <li class="list-group list-group-item">Distance: @ShopExtensions.toMiles(selectedLocation.Distance).ToString("0.00") Miles Away</li>
         <li class="list-group list-group-item"><h5 class="h5">Categories</h5>
         <ul>
-            @foreach (var category in selectedLocations?.Categories) {
+            @foreach (var category in selectedLocation?.Categories) {
                 <li class="list-group list-group-item">@category.Title</li>
             }
         </ul>
@@ -49,13 +53,13 @@
     </ul>
 } else {
      <p>Restaurant information is not available</p>
-}
+}</div>
 
 
 
 @code {
     private List<Business> locations = new();
-    private Business? selectedLocations;
+    private Business? selectedLocation;
     private Dictionary<string, bool> categoriesFilter = new();
     private SearchLocation currentPosition = new();
     private SearchLocation overridenPosition = new();
@@ -117,7 +121,7 @@
     }
 
     public async Task getRandomShop(string value = "") {
-        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
+        selectedLocation = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
         await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
         StateHasChanged();
     }

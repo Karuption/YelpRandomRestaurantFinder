@@ -1,4 +1,4 @@
-﻿namespace YelpRandomRestaurantFinder.Data;
+﻿namespace YelpRestaurantFinderComponent.Models;
 
 public class Business {
     public string? Name { get; set; }

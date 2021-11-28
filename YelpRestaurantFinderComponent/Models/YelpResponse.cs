@@ -1,4 +1,4 @@
-﻿namespace YelpRandomRestaurantFinder.Data;
+﻿namespace YelpRestaurantFinderComponent.Models;
 
 public class YelpResponse {
     public Search? Search { get; set; }
