@@ -1,4 +1,4 @@
-﻿namespace YelpRandomRestaurantFinder.Data;
+﻿namespace YelpRestaurantFinderComponent.Models;
 
 public static class Query {
     public static GraphQL.GraphQLRequest GetAllCategory(string Location, float Range = 8000, string Category = "Food") =>

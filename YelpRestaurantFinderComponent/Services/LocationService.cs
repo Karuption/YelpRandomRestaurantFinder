@@ -1,10 +1,11 @@
 ﻿using BrowserInterop.Extensions;
-
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using YelpRestaurantFinderComponent.Extensions;
+using YelpRestaurantFinderComponent.Models;
 
-using YelpRandomRestaurantFinder.Models;
-
-namespace YelpRandomRestaurantFinder.Data;
+namespace YelpRestaurantFinderComponent.Services;
 
 public interface ILocationService {
     Task<(SearchLocation?, bool)> GetLocation(SearchLocation? currentPosition, SearchLocation? overridenLocation);

@@ -1,4 +1,4 @@
-﻿namespace YelpRandomRestaurantFinder.Extensions;
+﻿namespace YelpRestaurantFinderComponent.Extensions;
 
 public static class ShopExtensions {
     public static T? GetRandom<T>(this IEnumerable<T> x) =>

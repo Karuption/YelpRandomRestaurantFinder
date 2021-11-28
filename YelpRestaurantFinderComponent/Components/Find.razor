@@ -1,7 +1,10 @@
-﻿@using YelpRandomRestaurantFinder.Data
-@using YelpRandomRestaurantFinder.Extensions
-@using Models
-@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+﻿@using YelpRestaurantFinderComponent.Models
+@using Microsoft.Extensions.Logging
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.ProtectedBrowserStorage
+@using YelpRestaurantFinderComponent.Extensions
+@using YelpRestaurantFinderComponent.Services
 @inject ProtectedLocalStorage ProtectedLocalStore
 
 @inject IJSRuntime jsRuntime
@@ -31,18 +34,18 @@
     </div>
 
 <div style="width:fit-content">
-@if (selectedLocations is not null) {
+@if (selectedLocation is not null) {
     <ul style="">
-    @foreach (var photo in selectedLocations.Photos) {
+    @foreach (var photo in selectedLocation.Photos) {
         <img class="img img-thumbnail" src=@photo />
     }
-        <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocations.Url>@selectedLocations.Name</a></li>
-        <li class="list-group list-group-item">Rating: @selectedLocations.Rating</li>
-        <li class="list-group list-group-item">Price: @selectedLocations.Price</li>
-        <li class="list-group list-group-item">Distance: @ShopExtensions.toMiles(selectedLocations.Distance).ToString("0.00") Miles Away</li>
+        <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocation.Url>@selectedLocation.Name</a></li>
+        <li class="list-group list-group-item">Rating: @selectedLocation.Rating</li>
+        <li class="list-group list-group-item">Price: @selectedLocation.Price</li>
+        <li class="list-group list-group-item">Distance: @ShopExtensions.toMiles(selectedLocation.Distance).ToString("0.00") Miles Away</li>
         <li class="list-group list-group-item"><h5 class="h5">Categories</h5>
         <ul>
-            @foreach (var category in selectedLocations?.Categories) {
+            @foreach (var category in selectedLocation?.Categories) {
                 <li class="list-group list-group-item">@category.Title</li>
             }
         </ul>
@@ -56,7 +59,7 @@
 
 @code {
     private List<Business> locations = new();
-    private Business? selectedLocations;
+    private Business? selectedLocation;
     private Dictionary<string, bool> categoriesFilter = new();
     private SearchLocation currentPosition = new();
     private SearchLocation overridenPosition = new();
@@ -118,7 +121,7 @@
     }
 
     public async Task getRandomShop(string value = "") {
-        selectedLocations = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
+        selectedLocation = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
         await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
         StateHasChanged();
     }

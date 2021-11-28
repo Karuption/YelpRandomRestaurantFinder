@@ -1,9 +1,9 @@
 ﻿using GraphQL.Client.Abstractions;
-using GraphQL.Client.Http;
+using Microsoft.Extensions.Logging;
+using YelpRestaurantFinderComponent.Extensions;
+using YelpRestaurantFinderComponent.Models;
 
-using YelpRandomRestaurantFinder.Extensions;
-
-namespace YelpRandomRestaurantFinder.Data;
+namespace YelpRestaurantFinderComponent.Services;
 public interface IYelpRetrievalService {
     Task<IList<Business>> GetYelpData(string? currentLocation, float radiusMiles);
 }
