@@ -1,37 +1,40 @@
-﻿@using YelpRestaurantFinderComponent.Models
-@using Microsoft.Extensions.Logging
-@using Microsoft.JSInterop
+﻿@using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.ProtectedBrowserStorage
+@using YelpRestaurantFinderComponent.Models
 @using YelpRestaurantFinderComponent.Extensions
 @using YelpRestaurantFinderComponent.Services
-@inject ProtectedLocalStorage ProtectedLocalStore
 
+@inject ProtectedLocalStorage ProtectedLocalStore
 @inject IJSRuntime jsRuntime
 @inject ILocationService LocationService
 @inject IYelpRetrievalService yelp
-@inject ILogger<YelpResponse> _logger
 
 <h3 class="text-primary">Find A Place To Eat!</h3>
-    <div classs="form-group">
+<div classs="form-group">
+    <div>
         <label for="PositionOverride" class="form-label">Search Location</label>
-            <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
-        <label >Search Radius: @searchRange.ToString("0.0") Mi </label> 
-            <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput" />
-        
+        <input type="text" class="form-text" @bind-value=@overridenPosition.OverridenLocation @bind-value:event="oninput"/>
+        <label >Search Radius: @searchRange.ToString("0.0") Mi </label>
+        <input type="range" class="slider" step=".1" min="1" max="24.8" @bind-value=@searchRange @bind-value:event="oninput"/>
+    </div>
+
+    <div>
         <h5 class="h5">Search Categories</h5>
-        <a @onclick="args=>updateAllCategoryFilter(true)" href="#">Check All</a> / <a @onclick="_=>updateAllCategoryFilter(false)" href="#">Uncheck All</a>
-        <ul class="list-group" style="display:inline-table">
-            @foreach(var cat in categoriesFilter.Keys ) {
-                <li class="list-group-item-action" @onclick="_=>toggleCategory(categoriesFilter[cat], cat)" style="width:17em;display:inline-table">
+        <a @onclick="args => updateAllCategoryFilter(true)" href="#">Check All</a> / <a @onclick="_ => updateAllCategoryFilter(false)" href="#">Uncheck All</a>
+        <ul class="list-group" style="display: inline-table">
+            @foreach (var cat in categoriesFilter.Keys)
+            {
+                <li class="list-group-item-action" @onclick="_ => toggleCategory(categoriesFilter[cat], cat)" style="width: 17em; display: inline-table">
                     <input type="checkbox" value=@cat @bind=@categoriesFilter[cat]>
                     <label >@cat</label>
                 </li>
             }
         </ul>
-        
-        <button class="btn btn-primary" @onclick="formSubmit">Search</button>
     </div>
+
+    <button class="btn btn-primary" @onclick="formSubmit">Search</button>
+</div>
 
 <div style="width:fit-content">
 @if (selectedLocation is not null) {
