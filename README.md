@@ -4,3 +4,5 @@
 I ventured to see what GraphQL has to offer. It seemed like it would be a possibly better OData? When I heard an arguement between two friends on where to eat, I spouted "why not check Yelp?". After a quick search, I found a GraphQL endpoint was in beta and set off to see what Blazor has to offer when trying to interact with it like a SPA framework. 
 
 I ended up using the GraphQL nuget package, but would like to look at the Strawberry Cake packoge some time in the future. 
+
+See this project live at [https://yelprandomrestaurantfinder20211128014205.azurewebsites.net/#]
