@@ -1,13 +1,15 @@
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:latest AS build-env
 WORKDIR /app
 
-COPY *.csproj ./
+COPY YelpRandomFood/*.csproj YelpRandomFood/
+COPY YelpRestaurantFinderComponent/*.csproj YelpRestaurantFinderComponent/
+COPY *.sln ./
 RUN dotnet restore
 
-COPY ../engine/examples ./
-RUN dotnet publish -c Release -o out
+COPY * ./
+RUN dotnet publish -c Release -o out --no-restore YelpRandomRestaurantFinder.sln
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:latest
 WORKDIR /app
 COPY --from=build-env /app/out .
 ENTRYPOINT ["dotnet", "YelpRandomRestaurantFinder.dll"]
