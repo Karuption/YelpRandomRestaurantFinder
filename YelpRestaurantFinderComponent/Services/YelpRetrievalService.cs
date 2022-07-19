@@ -18,8 +18,9 @@ public class YelpRetrievalService : IYelpRetrievalService {
         _logger = logger;
         this.gclient = gclient;
     }
-    public async Task<IList<Business>> GetYelpData(string? currentLocation, float radiusMiles) {
-        GraphQL.GraphQLRequest? request = Query.GetAllCategory(currentLocation, ShopExtensions.toMeters(radiusMiles));
+    public async Task<IList<Business>> GetYelpData(string? currentLocation, float radiusMiles)
+    {
+        GraphQL.GraphQLRequest? request = Query.GetAllCategory(currentLocation??"", ShopExtensions.toMeters(radiusMiles));
         GraphQL.GraphQLResponse<YelpResponse>? response = await gclient.SendQueryAsync<YelpResponse>(request);
 
         if (response.Errors is not null) {
@@ -27,6 +28,6 @@ public class YelpRetrievalService : IYelpRetrievalService {
             return new List<Business>();
         }
 
-        return response?.Data?.Search?.Business;
+        return response?.Data?.Search?.Business ?? new List<Business>();
     }
 }

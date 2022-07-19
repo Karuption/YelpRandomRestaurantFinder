@@ -21,7 +21,7 @@ public class LocationService : ILocationService {
     public LocationService(IJSRuntime JSRuntime, ILogger<LocationService> logger, IHttpContextAccessor contexAccessor) {
         _jsRuntime = JSRuntime;
         this.logger = logger;
-        httpContext = contexAccessor?.HttpContext;
+        httpContext = contexAccessor.HttpContext;
     }
 
     /// <summary>
@@ -50,6 +50,6 @@ public class LocationService : ILocationService {
             logger.LogInformation($"Unable to resolve location for IP {httpContext.Connection.RemoteIpAddress}");
         }
 
-        return ((SearchLocation)currentPosition, false);
+        return ((SearchLocation?)currentPosition, false);
     }
 }

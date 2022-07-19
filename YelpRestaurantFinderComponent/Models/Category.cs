@@ -4,7 +4,7 @@ namespace YelpRestaurantFinderComponent.Models;
 
 public class Category : IEqualityComparer {
     public Category() {
-
+        Parent_Categories = new List<Category>();
     }
     public string? Title { get; set; }
     public string? alias { get; set; }

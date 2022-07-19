@@ -17,14 +17,14 @@ public class SearchLocation : IEquatable<SearchLocation> {
             return new() { Error = v.Error.Message };
         if (v?.Location?.Coords is not null)
             return new() { Coords = new(v.Location.Coords.Latitude, v.Location.Coords.Longitude) };
-        return null;
+        return new SearchLocation() { Error = "Error searching for location" };
     }
 
     public bool Equals(SearchLocation? other) {
         if (other == null)
             return false;
         if (isOverridden && other.isOverridden)
-            return OverridenLocation.Equals(other.OverridenLocation);
+            return OverridenLocation?.Equals(other.OverridenLocation)??false;
         if (Coords is not null && other?.Coords is not null)
             Coords.Equals(other.Coords);
         return false;

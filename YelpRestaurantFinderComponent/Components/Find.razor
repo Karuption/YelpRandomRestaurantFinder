@@ -39,7 +39,7 @@
 <div style="width:fit-content">
 @if (selectedLocation is not null) {
     <ul style="">
-    @foreach (var photo in selectedLocation.Photos) {
+    @foreach (var photo in selectedLocation?.Photos) {
         <img class="img img-thumbnail" src=@photo />
     }
         <li class="list-group list-group-item"><a class="link link-primary" href=@selectedLocation.Url>@selectedLocation.Name</a></li>
@@ -64,7 +64,7 @@
     private List<Business> locations = new();
     private Business? selectedLocation;
     private Dictionary<string, bool> categoriesFilter = new();
-    private SearchLocation currentPosition = new();
+    private SearchLocation? currentPosition = new();
     private SearchLocation overridenPosition = new();
     private DateTime? cacheDate = DateTime.UtcNow;
     private float searchRange = 5;//search radius in miles
@@ -74,7 +74,7 @@
         await base.OnInitializedAsync();
         overridenPosition.OverridenLocation = "Enter a location";
 
-        
+
         cacheDate = (await ProtectedSessionStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value ?? cacheDate;
         locations = (await ProtectedSessionStore.GetAsync<List<Business>?>("Business")).Value ?? locations;
         categoriesFilter = (await ProtectedSessionStore.GetAsync<Dictionary<string, bool>>("categoriesFilter")).Value ?? categoriesFilter;
@@ -93,7 +93,7 @@
             await setCache();
         }
 
-        getRandomShop();
+        await getRandomShop();
     }
 
     private async void formSubmit() {
@@ -105,7 +105,7 @@
 
         if (overridenPosition.hasChanged(currentPosition) || searchRange > queriedRange) {
             await clearCache();
-            updateVariables( await yelp.GetYelpData(overriden?overridenPosition.getCurrentLocation():currentPosition.getCurrentLocation(), searchRange) );
+            updateVariables( await yelp.GetYelpData(overriden?overridenPosition.getCurrentLocation():currentPosition?.getCurrentLocation(), searchRange) );
             if (overriden) {
                 currentPosition = overridenPosition;
                 overridenPosition = new();
@@ -113,19 +113,19 @@
             }
             await setCache();
         }
-        getRandomShop();
+        await getRandomShop();
     }
 
     public void updateVariables(IList<Business> YelpUpdate) {
         queriedRange = searchRange;
         locations = YelpUpdate.ToList() ?? locations;
 
-        foreach (var title in locations.SelectMany(x => x.Categories.Select(x => x.Title)).Distinct())
-            if(!categoriesFilter.ContainsKey(title)) categoriesFilter.Add((string)title, true);
+        foreach (var title in locations.SelectMany(x => x?.Categories?.Select(x => x.Title)).Distinct())
+            if(!categoriesFilter.ContainsKey(title??"")) categoriesFilter.Add((string?)title??"", true);
     }
 
     public async Task getRandomShop(string value = "") {
-        selectedLocation = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
+        selectedLocation = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title??"")&&categoriesFilter[x.Title??""])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
         await ProtectedSessionStore.SetAsync("categoriesFilter", categoriesFilter);
         StateHasChanged();
     }
