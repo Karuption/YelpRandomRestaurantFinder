@@ -7,7 +7,6 @@ public class SearchLocation : IEquatable<SearchLocation> {
 
     }
     public bool isOverridden { get; set; } = false;
-    private string? _overridenLocation;
     public string? OverridenLocation { get; set; }
     public coord? Coords { get; set; }
 

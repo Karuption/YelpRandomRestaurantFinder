@@ -10,12 +10,13 @@
   "profiles": {
     "YelpRandomFood": {
       "commandName": "Project",
-      "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:443;http://localhost:5202",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "YelpApiKey": "4yjK7SVuBaguDHGfDwMgF2CQpGKk_U0yDNeh9XPfTz_Fs5pEWT3o0qfMTscsocaIya6WxbvDgxdv96hCe8-7_AajnhOtYohi0L9WTEJ2l0UhFh1TL-LPIhGY3qhrYXYx"
+      },
+      "applicationUrl": "https://localhost:443;http://localhost:5202",
+      "dotnetRunMessages": true
     },
     "IIS Express": {
       "commandName": "IISExpress",

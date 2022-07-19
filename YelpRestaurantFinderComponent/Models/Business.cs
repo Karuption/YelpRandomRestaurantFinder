@@ -7,5 +7,5 @@ public class Business {
     public string? Price { get; set; }
     public IList<Category>? Categories { get; set; }
     public Uri? Url { get; set; }
-    public IList<string> Photos { get; set; }
+    public IList<string>? Photos { get; set; }
 }

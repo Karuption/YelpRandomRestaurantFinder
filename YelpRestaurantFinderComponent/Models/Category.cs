@@ -7,7 +7,7 @@ public class Category : IEqualityComparer {
 
     }
     public string? Title { get; set; }
-    public string alias { get; set; }
+    public string? alias { get; set; }
     public IList<Category> Parent_Categories { get; set; }
 
     public new bool Equals(object? x, object? y) {

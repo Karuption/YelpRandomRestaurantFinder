@@ -5,7 +5,7 @@
 @using YelpRestaurantFinderComponent.Extensions
 @using YelpRestaurantFinderComponent.Services
 
-@inject ProtectedLocalStorage ProtectedLocalStore
+@inject ProtectedSessionStorage ProtectedSessionStore
 @inject IJSRuntime jsRuntime
 @inject ILocationService LocationService
 @inject IYelpRetrievalService yelp
@@ -74,10 +74,11 @@
         await base.OnInitializedAsync();
         overridenPosition.OverridenLocation = "Enter a location";
 
-        cacheDate = (await ProtectedLocalStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value ?? cacheDate;
-        locations = (await ProtectedLocalStore.GetAsync<List<Business>?>("Business")).Value ?? locations;
-        categoriesFilter = (await ProtectedLocalStore.GetAsync<Dictionary<string, bool>>("categoriesFilter")).Value ?? categoriesFilter;
-        queriedRange = (await ProtectedLocalStore.GetAsync<float?>("QuriedRange")).Value ?? queriedRange;
+        
+        cacheDate = (await ProtectedSessionStore.GetAsync<DateTime?>("BusinessCacheDateTime")).Value ?? cacheDate;
+        locations = (await ProtectedSessionStore.GetAsync<List<Business>?>("Business")).Value ?? locations;
+        categoriesFilter = (await ProtectedSessionStore.GetAsync<Dictionary<string, bool>>("categoriesFilter")).Value ?? categoriesFilter;
+        queriedRange = (await ProtectedSessionStore.GetAsync<float?>("QuriedRange")).Value ?? queriedRange;
 
         (currentPosition, bool hasChanged) = await LocationService.GetLocation(currentPosition, overridenPosition);
 
@@ -125,7 +126,7 @@
 
     public async Task getRandomShop(string value = "") {
         selectedLocation = locations.Where(x=>x.Categories.Any(x=> categoriesFilter.ContainsKey(x.Title)&&categoriesFilter[x.Title])&&(x.Distance <= ShopExtensions.toMeters(searchRange))).GetRandom();
-        await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
+        await ProtectedSessionStore.SetAsync("categoriesFilter", categoriesFilter);
         StateHasChanged();
     }
     public void toggleCategory(bool isChecked, string catTitle) {
@@ -138,17 +139,17 @@
     }
     
     public async Task setCache() {
-        await ProtectedLocalStore.SetAsync("Business", locations);
-        await ProtectedLocalStore.SetAsync("BusinessCacheDateTime", ShopExtensions.roundUp30(DateTime.UtcNow));
-        await ProtectedLocalStore.SetAsync("categoriesFilter", categoriesFilter);
-        await ProtectedLocalStore.SetAsync("QuriedRange", queriedRange);
+        await ProtectedSessionStore.SetAsync("Business", locations);
+        await ProtectedSessionStore.SetAsync("BusinessCacheDateTime", ShopExtensions.roundUp30(DateTime.UtcNow));
+        await ProtectedSessionStore.SetAsync("categoriesFilter", categoriesFilter);
+        await ProtectedSessionStore.SetAsync("QuriedRange", queriedRange);
     }
 
     public async Task clearCache() {
-        await ProtectedLocalStore.DeleteAsync("Business");
-        await ProtectedLocalStore.DeleteAsync("BusinessCacheDateTime");
-        await ProtectedLocalStore.DeleteAsync("categoriesFilter");
-        await ProtectedLocalStore.DeleteAsync("QuriedRange");
+        await ProtectedSessionStore.DeleteAsync("Business");
+        await ProtectedSessionStore.DeleteAsync("BusinessCacheDateTime");
+        await ProtectedSessionStore.DeleteAsync("categoriesFilter");
+        await ProtectedSessionStore.DeleteAsync("QuriedRange");
         cacheDate = null;
     }
 }
