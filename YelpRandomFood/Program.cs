@@ -1,15 +1,9 @@
-using Azure.Identity;
-
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
-
 using YelpRestaurantFinderComponent.Services;
 
 var builder = WebApplication.CreateBuilder(args);
-
-//var keyVaultEndpoint = new Uri(Environment.GetEnvironmentVariable("VaultUri"));
-//builder.Configuration.AddAzureKeyVault(keyVaultEndpoint, new DefaultAzureCredential());
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -44,11 +38,9 @@ if (!app.Environment.IsDevelopment()) {
     app.UseHsts();
 }
 
-//app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 
-app.UseRouting();
+//app.UseRouting();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

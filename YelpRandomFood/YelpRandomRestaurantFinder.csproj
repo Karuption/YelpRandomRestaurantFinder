@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>d72d114a-06d8-4950-a851-c51bb96b2805</UserSecretsId>
@@ -9,9 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.2.2" />
-    <PackageReference Include="Azure.Identity" Version="1.6.0" />
-    <PackageReference Include="GraphQL.Client" Version="5.0.1" />
-    <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="5.0.1" />
+    <PackageReference Include="Azure.Identity" Version="1.8.0" />
+    <PackageReference Include="GraphQL.Client" Version="5.1.0" />
+    <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="5.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.ProtectedBrowserStorage" Version="5.0.0-rc.1.20451.17" />
   </ItemGroup>
 
