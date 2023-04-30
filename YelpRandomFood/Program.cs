@@ -1,6 +1,9 @@
 using GraphQL.Client.Abstractions;
 using GraphQL.Client.Http;
 using GraphQL.Client.Serializer.SystemTextJson;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using YelpRestaurantFinderComponent.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +31,9 @@ builder.Services.AddLogging();
 builder.Logging.AddConsole();
 
 builder.Services.AddProtectedBrowserStorage();
+builder.Services.AddHealthChecks()
+    .AddCheck<YelpApIConnectivityHealthCheck>(nameof(YelpApIConnectivityHealthCheck), HealthStatus.Unhealthy, default,
+        TimeSpan.FromMinutes(1));
 
 var app = builder.Build();
 
@@ -39,8 +45,9 @@ if (!app.Environment.IsDevelopment()) {
 }
 
 app.UseStaticFiles();
-
-//app.UseRouting();
+app.MapHealthChecks("/healthcheck",
+    new HealthCheckOptions { ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse });
+app.UseRouting();
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");

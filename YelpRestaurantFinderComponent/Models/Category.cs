@@ -11,14 +11,15 @@ public class Category : IEqualityComparer {
     public IList<Category> Parent_Categories { get; set; }
 
     public new bool Equals(object? x, object? y) {
-        if (x is Category && y is Category)
-            return Equals((Category)x, (Category)y);
-        else
-            return false;
+        if (x is Category categoryX && y is Category categoryY)
+            return Equals(categoryX, categoryY);
+        return false;
     }
+
+    public int GetHashCode(object obj) {
+        return string.GetHashCode(Title ?? "" + alias ?? "");
+    }
+
     public bool Equals(Category? x, Category? y) =>
         (x?.Title == y?.Title) && (x?.alias == y?.alias);
-
-    public int GetHashCode(object obj) =>
-        obj.GetHashCode();
 }
