@@ -5,4 +5,4 @@ I ventured to see what GraphQL has to offer. It seemed like it would be a possib
 
 I ended up using the GraphQL nuget package, but would like to look at the Strawberry Cake package some time in the future. 
 
-[Try it out!](https://foodfinder.home.papederson.tech)
+[Try it out!](https://foodfinder.home.paulpederson.me)
